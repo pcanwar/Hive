@@ -2,28 +2,23 @@ package handlers
 
 import (
 	"errors"
+	"github.com/pcanwar/artHive/artwork/models"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/gorilla/mux"
 )
 
-func List(req events.APIGatewayProxyRequest, tableName string, dyna dynamodbiface.DynamoDBAPI) (*events.APIGatewayProxyResponse, error) {
+func ListArtwork(address, tableName string, dyna dynamodbiface.DynamoDBAPI) (*models.Owner, error) {
 	// Create the key for the DynamoDB GetItem operation.
-	ownerAddress := mux.Vars(req)["ownerAddress"]
-	artworkID := mux.Vars(req)["artworkID"]
 	key := map[string]*dynamodb.AttributeValue{
 		"address": {
-			S: aws.String(ownerAddress),
-		},
-		"_id": {
-			S: aws.String(artworkID),
+			S: aws.String(address),
 		},
 	}
 
+	// run the GetItemInput for the DynamoDB get item operation.
 	input := &dynamodb.GetItemInput{
 		Key:       key,
 		TableName: aws.String(tableName),
@@ -39,12 +34,23 @@ func List(req events.APIGatewayProxyRequest, tableName string, dyna dynamodbifac
 		return nil, nil
 	}
 
-	artwork := new(Artwork)
-	err = dynamodbattribute.UnmarshalMap(output.Item, artwork)
+	item := new(models.Owner)
+	err = dynamodbattribute.UnmarshalMap(output.Item, item)
 
 	if err != nil {
 		return nil, errors.New(ErrorFailedToUnmarshalRecord)
 	}
 
-	return artwork, nil
+	// Unmarshal the Artworks field into the Artwork struct
+	for i := range item.Artworks {
+		artwork := new(models.Artwork)
+		err = dynamodbattribute.UnmarshalMap(output.Item["artworks"].L[i].M, artwork)
+		if err != nil {
+			return nil, errors.New(ErrorFailedToUnmarshalRecord)
+		}
+		item.Artworks[i] = *artwork
+	}
+
+	return item, nil
+
 }
