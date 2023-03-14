@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  artHive
+
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 2048
+
+Resources:
+  ArtworkAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Cors:
+        AllowMethods: "'GET, POST, PATCH, PUT, DELETE, HEAD, OPTIONS'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      OpenApiVersion: 3.0.3
+  ArtworkFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: cmd/
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /api
+            Method: GET
+            RestApiId: !Ref "ArtworkAPI"
+        CreateNewUser:
+          Type: Api
+          Properties:
+            Path: /api
+            Method: post
+            RestApiId: !Ref "ArtworkAPI"
+        DeleteUser:
+          Type: Api
+          Properties:
+            Path: /delete
+            Method: delete
+            RestApiId: !Ref "ArtworkAPI"
+        # Get all Brokerage users
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          PARAM1: VALUE
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Join:
+          - ''
+          - - ApplicationInsights-SAM-
+            - Ref: AWS::StackName
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Fn::Join:
+          - ''
+          - - ApplicationInsights-SAM-
+            - Ref: AWS::StackName
+      AutoConfigurationEnabled: 'true'
+    DependsOn: ApplicationResourceGroup
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HelloWorldAPI:
+    Description: API Gateway endpoint URL for Prod environment for First Function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  ArtworkFunction:
+    Description: First Lambda Function ARN
+    Value: !GetAtt ArtworkFunction.Arn
+  ArtworkFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value: !GetAtt ArtworkFunctionRole.Arn
