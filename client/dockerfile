@@ -1,0 +1,16 @@
+# Specify a base image
+FROM node:18-alpine
+
+# Install some depenendencies
+COPY package*.json ./
+RUN npm install
+COPY ./ ./
+
+# # TypeScript to JavaScript
+# RUN npm install
+
+#container network port number
+EXPOSE 3000
+
+# Default command
+CMD ["npm", "start"]

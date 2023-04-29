@@ -1,0 +1,61 @@
+version: "3.9"
+services:
+  reactApp:
+    image: reactApp
+    # container_name: news
+    # command: npm start
+    # stdin_open: true
+    ports:
+      - "3000:3000"
+    network:
+      - netApp
+    # environment:
+    #   - NODE_ENV=development
+    depends_on:
+      - mongo
+  apiNode:
+    image: apiNode
+    # container_name: news
+    # command: npm start
+    # stdin_open: true
+    ports:
+      - "4001:4001"
+    network:
+      - netApp
+    # environment:
+    #   - NODE_ENV=development
+    depends_on:
+      - mongo
+  apiGo:
+    image: apiGo
+    # container_name: news
+    # command: npm start
+    # stdin_open: true
+    ports:
+      - "4002:4002"
+    network:
+      - netApp
+    # environment:
+    #   - NODE_ENV=development
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo:"mongo:6.0"
+    # container_name: SMongo
+    restart: always
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=admin
+    #   - MONGO_INITDB_ROOT_PASSWORD=123
+    #   - MONGO_INITDB_DATABASE=newsDB
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    network:
+      - netApp
+networks:
+  netApp:
+    driver: bridge
+volumes:
+  mongo-data:
+    driver: local
